@@ -22,6 +22,7 @@ description:         Please see the README on GitHub at <https://github.com/felb
 dependencies:
 - base
 - classy-prelude
+- mtl
 - time
 - pcre-heavy
 
