@@ -3,7 +3,35 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: string-random-0.1.0.0@sha256:421a99e3330a23ae664a706be4712c5ca0ff188bbd5d95e8a4a1fbf143365b98,2238
+    pantry-tree:
+      size: 434
+      sha256: 4092aa6c08612cf9c07a1f1eea0ae3e42b28bac9e621bf491c781859a70bffcd
+  original:
+    hackage: string-random-0.1.0.0
+- completed:
+    hackage: containers-0.5.11.0@sha256:28ad7337057442f75bc689315ab4ec7bdf5e6b2c39668f306672cecd82c02798,16685
+    pantry-tree:
+      size: 4849
+      sha256: faa4e75922a28f7cfe9920c1d7ab3866b792cefcd29bf79f54cfe3b6b5f57cbf
+  original:
+    hackage: containers-0.5.11.0
+- completed:
+    hackage: binary-0.8.7.0@sha256:ae3e6cca723ac55c54bbb3fa771bcf18142bc727afd57818e66d6ee6c8044f12,7705
+    pantry-tree:
+      size: 1976
+      sha256: 35e44b6d3ccf0d56fc5407dc3f0895e74696a66da189afbd65973c95743f5e25
+  original:
+    hackage: binary-0.8.7.0
+- completed:
+    hackage: text-1.2.4.0@sha256:8c24450feb8e3bbb7ea3e17af24ef57e85db077c4bf53e5bcc345b283d1b1d5b,10081
+    pantry-tree:
+      size: 7457
+      sha256: 3437b0a73ce2ae1a81aa8b3438d41a85981c00894cdbee0d6d6d6873046a5d5d
+  original:
+    hackage: text-1.2.4.0
 snapshots:
 - completed:
     size: 524786

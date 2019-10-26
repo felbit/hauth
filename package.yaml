@@ -26,6 +26,7 @@ dependencies:
 - time
 - pcre-heavy
 - data-has
+- string-random
 
 default-extensions:
 - NoImplicitPrelude
