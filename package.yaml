@@ -25,11 +25,14 @@ dependencies:
 - mtl
 - time
 - pcre-heavy
+- data-has
 
 default-extensions:
 - NoImplicitPrelude
 - OverloadedStrings
 - QuasiQuotes
+- ConstraintKinds
+- FlexibleContexts
 
 library:
   source-dirs: src

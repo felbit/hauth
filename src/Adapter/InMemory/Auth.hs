@@ -21,6 +21,7 @@ module Adapter.InMemory.Auth where
 
 import           ClassyPrelude
 import qualified Domain.Auth                   as D
+import           Data.Has
 
 data State = State
   { stateAuth :: [ (D.UserId, D.Auth) ]
@@ -30,3 +31,49 @@ data State = State
   , stateNotifications :: Map D.Email D.VerificationCode
   , stateSessions :: Map D.SessionId D.UserId
   } deriving (Show, Eq)
+
+-- | This type alias is made possible through the "ConstraintKInds" language
+-- extension. Without that I would have to write the full constraint in each
+-- function like so:
+--
+-- >>> addAuth :: (Has (TVar State) r, MonadReader r m, MonadIO m)
+--             => Auth -> m (Either RegistrationError VerificationCode)
+type InMemory r m = (Has (TVar State) r, MonadReader r m, MonadIO m)
+
+initialState :: State
+initialState = State { stateAuth             = []
+                     , stateUnverifiedEmails = mempty
+                     , stateVerifiedEmails   = mempty
+                     , stateUserIdCounter    = 0
+                     , stateNotifications    = mempty
+                     , stateSessions         = mempty
+                     }
+
+-- ** Repository functions (copied from Domain.Auth) with InMemory constraint.
+
+addAuth
+  :: InMemory r m => D.Auth -> m (Either D.RegistrationError D.VerificationCode)
+addAuth = undefined
+
+setEmailAsVerified
+  :: InMemory r m
+  => D.VerificationCode
+  -> m (Either D.EmailVerificationError ())
+setEmailAsVerified = undefined
+
+findUserByAuth :: InMemory r m => D.Auth -> m (Maybe (D.UserId, Bool))
+findUserByAuth = undefined
+
+findEmailFromUserId :: InMemory r m => D.UserId -> m (Maybe D.Email)
+findEmailFromUserId = undefined
+
+newSession :: InMemory r m => D.UserId -> m D.SessionId
+newSession = undefined
+
+findUserIdBySessionId :: InMemory r m => D.SessionId -> m (Maybe D.UserId)
+findUserIdBySessionId sId = do
+  tvar <- asks getter
+  liftIO $ lookup sId . stateSessions <$> readTVarIO tvar
+
+notifyEmailVerification :: InMemory r m => D.Email -> D.VerificationCode -> m ()
+notifyEmailVerification = undefined
