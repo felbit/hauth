@@ -2,14 +2,16 @@
 
 > Pedo mellon a minno.
 
-## Current Implementation State
+## Current state of implementation
 
-Currently the domain code is implemented. That is `Domain.Validation` for validation
+Currently the domain code is finished. That is `Domain.Validation` for validation
 functionality for passwords and email addresses and `Domain.Auth` as main
 authentication module.
 
-Additionally there is a basic in-memory database that holds authentication and session
+Additionally there is a basic in-memory _"database"_ that holds authentication and session
 information.
+
+Next I will add a frontend to make using that stuff easier.
 
 ## Test it
 
@@ -50,11 +52,13 @@ Just 1
 
 This is not very satisfying at the moment. I am working on a better frontend.
 
+While waiting for that, why don't you listen to [Trees of Eternity](https://www.youtube.com/watch?v=ADzeM3VsgFg) for a while?
+
 ## Documentation
 
-Generate [Haddock](https://www.haskell.org/haddock) documentation with `stack haddock`.
+Generate [Haddock](https://www.haskell.org/haddock) documentation with `stack haddock`. I will add this in the future as static site to this repository.
 
-## Login Requirements
+## Requirement Sketch
 
 A user ...
 * ... should be able to log in with email address and password
