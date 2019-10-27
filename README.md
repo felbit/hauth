@@ -1,6 +1,6 @@
 # Authentication and Session Management in Haskell
 
-> It's a dangerous business going out of your door. You step into the Road, and if you don't keep your feet, there is no knowing where you might be swept off to. - Bilbo Baggins
+> Pedo mellon a minno.
 
 ## Current Implementation State
 
