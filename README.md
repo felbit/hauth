@@ -1,6 +1,6 @@
-# hauth
+# Authentication and Session Management in Haskell
 
-An authentification and authorization system for web applications written in Haskell.
+> It's a dangerous business going out of your door. You step into the Road, and if you don't keep your feet, there is no knowing where you might be swept off to. - Bilbo Baggins
 
 ## Current Implementation State
 
@@ -8,7 +8,7 @@ Currently the domain code is implemented. That is `Domain.Validation` for valida
 functionality for passwords and email addresses and `Domain.Auth` as main
 authentication module.
 
-Additionally there is a basic in memory database that holds authentication and session
+Additionally there is a basic in-memory database that holds authentication and session
 information.
 
 ## Test it
@@ -25,7 +25,7 @@ Build the package and enter the REPL:
 $ stack build
 $ stack ghci --only-main
 Ok, one module loaded.
-λ> |
+λ>
 ```
 
 Load the module: `Adapter.InMemory.Auth` which will include `Domain.Auth` and
@@ -48,7 +48,7 @@ Just (Email {rawEmail = "felbit@example.com"})
 Just 1
 ```
 
-This is not very satisfying at the moment. I am working on a _nicer_ frontend next.
+This is not very satisfying at the moment. I am working on a better frontend.
 
 ## Documentation
 
@@ -60,6 +60,3 @@ A user ...
 * ... should be able to log in with email address and password
 * ... should *not* be able to log in with invalid email address and password combination
 * ... should *not* be able to log in if the email address has not been validated
-
-* ... will be redirected to login page if not authenticated
-* ... will see his email address on a "profile page" otherwise
