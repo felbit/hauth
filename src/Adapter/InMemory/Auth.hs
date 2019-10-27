@@ -26,12 +26,12 @@ import qualified Domain.Auth                   as D
 import           Text.StringRandom
 
 data State = State
-  { stateAuths :: [ (D.UserId, D.Auth) ]
+  { stateAuths            :: [ (D.UserId, D.Auth) ]
   , stateUnverifiedEmails :: Map D.VerificationCode D.Email
-  , stateVerifiedEmails :: Set D.Email
-  , stateUserIdCounter :: Int
-  , stateNotifications :: Map D.Email D.VerificationCode
-  , stateSessions :: Map D.SessionId D.UserId
+  , stateVerifiedEmails   :: Set D.Email
+  , stateUserIdCounter    :: Int
+  , stateNotifications    :: Map D.Email D.VerificationCode
+  , stateSessions         :: Map D.SessionId D.UserId
   } deriving (Show, Eq)
 
 -- | This type alias is made possible through the "ConstraintKInds" language
@@ -63,19 +63,15 @@ addAuth
   :: InMemory r m => D.Auth -> m (Either D.RegistrationError D.VerificationCode)
 addAuth auth = do
   tvar  <- asks getter
-
   -- generate the verification code
   vCode <- liftIO $ stringRandomIO "[A-Za-z0-9]{16}"
-
   atomically . runExceptT $ do
     state <- lift $ readTVar tvar
-
     -- check, whether the given email is a duplicate
     let auths       = stateAuths state
         email       = D.authEmail auth
         isDuplicate = any (email ==) . map (D.authEmail . snd) $ auths
     when isDuplicate $ throwError D.RegistrationErrorEmailTaken
-
     -- update state
     let newUserId      = stateUserIdCounter state + 1
         newAuths       = (newUserId, auth) : auths

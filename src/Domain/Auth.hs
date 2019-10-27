@@ -78,7 +78,7 @@ obviously have side effects.
 
 -}
 
-class Monad m => AuthRepo m where
+class (Monad m) => AuthRepo m where
     addAuth :: Auth
             -> m (Either RegistrationError VerificationCode)
     setEmailAsVerified :: VerificationCode
@@ -86,11 +86,11 @@ class Monad m => AuthRepo m where
     findUserByAuth :: Auth -> m (Maybe (UserId, Bool))
     findEmailFromUserId :: UserId -> m (Maybe Email)
 
-class Monad m => SessionRepo m where
+class (Monad m) => SessionRepo m where
     newSession :: UserId -> m SessionId
     findUserIdBySessionId :: SessionId -> m (Maybe UserId)
 
-class Monad m => EmailVerificationNotif m where
+class (Monad m) => EmailVerificationNotif m where
     notifyEmailVerification :: Email
                             -> VerificationCode
                             -> m ()
@@ -120,19 +120,11 @@ mkPassword = validate
 
 -- ** Registration
 
-instance AuthRepo IO where
-    addAuth (Auth email pass) = do
-        putStrLn $ "adding auth > " <> rawEmail email
-        return $ Right "fake verification code"
-
-instance EmailVerificationNotif IO where
-    notifyEmailVerification email vcode =
-        putStrLn $ "Notify > " <> rawEmail email <> " - " <> vcode
-
--- | Adds an Auth to the repository through 'addAuth' which returns a
--- 'VerificationCode'. Then notifies the user for email verification.
--- ExceptT ensures that the lines that follow will not be evaluated, if
--- 'addAuth' returns a Left value.
+{-| Adds an Auth to the repository through 'addAuth' which returns a
+'VerificationCode'. Then notifies the user for email verification. ExceptT
+ensures that the lines that follow will not be evaluated, if 'addAuth' returns
+a Left value.
+-}
 register
     :: (AuthRepo m, EmailVerificationNotif m)
     => Auth
@@ -143,17 +135,13 @@ register auth = runExceptT $ do
     lift $ notifyEmailVerification email vCode
 
 
-{- verifyEmail
-
-May seem like a useless indirection of `setEmailAsVerified` but keeps things
+{-| May seem like a useless indirection of `setEmailAsVerified` but keeps things
 consistent and maintainable in the long run. This is also the point to extend
 functionallity in verification of email in the future.
 
 The very same for `resolveSessionId` and `getUserEmail`. These all are merely
 indirections at the moment.
-
 -}
-
 verifyEmail
     :: AuthRepo m => VerificationCode -> m (Either EmailVerificationError ())
 verifyEmail = setEmailAsVerified
