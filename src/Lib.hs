@@ -42,10 +42,21 @@ action = do
       passw = either undefined id $ mkPassword "SUP3rS3crEtP4ssW0Rd"
       auth  = Auth email passw
   register auth
-  -- https://prime.haskell.org/wiki/Libraries/Proposals/MonadFail#Adaptingoldcode
-  Just vCode <- M.getNotificationsForEmail email
+  mayVCode <- M.getNotificationsForEmail email
+  vCode    <- case mayVCode of
+    Nothing     -> error "Verification code not found."
+    Just vCode' -> return vCode'
   verifyEmail vCode
-  Right session  <- login auth
-  Just  uId      <- resolveSessionId session
-  Just  regEmail <- getUserEmail uId
+  eitherSession <- login auth
+  session       <- case eitherSession of
+    Left  lsession' -> return "0"
+    Right rsession  -> return rsession
+  mayUId <- resolveSessionId session
+  uId    <- case mayUId of
+    Nothing   -> error "User not found."
+    Just uId' -> return uId'
+  mayRegEmail <- getUserEmail uId
+  regEmail    <- case mayRegEmail of
+    Nothing      -> error "Registration Mail not found."
+    Just remail' -> return remail'
   print (session, uId, regEmail)
