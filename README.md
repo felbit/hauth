@@ -1,8 +1,8 @@
 # Authentication and Session Management in Haskell
 
-> 
+>
 > Pedo mellon a minno.
-> 
+>
 
 ## Current state of implementation
 
@@ -32,6 +32,22 @@ action = do
   Just  regEmail <- getUserEmail uId
   print (session, uId, regEmail)
 ```
+
+### GHC 8.6 and `Monad.Fail`
+
+Currently `action` of `Lib.hs` has the somewhat ugly and repetitive pattern of
+
+```
+mayFoo <- M.getFoo x
+foo    <- case mayFoo of
+  Nothing     -> error "Foo not found."
+  Just foo' -> return foo'
+```
+
+That is a quick workaround for the changed behaviour of `MonadFail` in GHC 8.6. I should
+have implemented an `instance Fail.MonadFail App` here, and maybe I will do so later (read:
+_when I did fully understand what I need to do to implement that_ ...); but for now I ran
+with the quick-fix here.
 
 ## Documentation
 
