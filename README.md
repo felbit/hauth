@@ -1,6 +1,8 @@
 # Authentication and Session Management in Haskell
 
+> 
 > Pedo mellon a minno.
+> 
 
 ## Current state of implementation
 
@@ -13,46 +15,23 @@ information.
 
 Next I will add a frontend to make using that stuff easier.
 
-## Test it
+## Implementation
 
-Clone or download the repository and enter it:
-
-```
-git clone https://github.com/felbit/hauth.git && cd hauth
-```
-
-Build the package and enter the REPL:
+How to use the authentication module with in-memory database is demonstrated in `src/Lib.hs`. The `action` function demonstrates application (prints a tupel of `(SessionId, UserId, Email)`, e.g. `("1XSq9I1V7RUvO6zFr",1,Email {emailRaw = "felbit@example.com"})`):
 
 ```
-$ stack build
-$ stack ghci --only-main
-Ok, one module loaded.
-λ>
+action = do
+  let email = either undefined id $ mkEmail "felbit@example.com"
+      passw = either undefined id $ mkPassword "SUP3rS3crEtP4ssW0Rd"
+      auth  = Auth email passw
+  register auth
+  Just vCode <- M.getNotificationsForEmail email
+  verifyEmail vCode
+  Right session  <- login auth
+  Just  uId      <- resolveSessionId session
+  Just  regEmail <- getUserEmail uId
+  print (session, uId, regEmail)
 ```
-
-Load the module: `Adapter.InMemory.Auth` which will include `Domain.Auth` and
-`Domain.Validation`. With that in your REPL you can add a new authentication:
-
-```
-λ> let email = D.mkEmail "felbit@example.com"
-λ> let passw = D.mkPassword "SeCreTP4ssw0rd"
-λ> let auth = either undefined id $ D.Auth <$> email <*> passw
-λ> s <- newTVarIO inititalState
-λ> addAuth s auth
-Right "hBdaG453DfaE42kN"
-λ> findUserByAuth s auth
-Just (1,False)
-λ> findEmailFromUserId s 1
-Just (Email {rawEmail = "felbit@example.com"})
-λ> newSession s 1
-"1hdnu28DHI89Hbdi2"
-λ> findUserBySessionId s "1hdnu28DHI89Hbdi2"
-Just 1
-```
-
-This is not very satisfying at the moment. I am working on a better frontend.
-
-While waiting for that, why don't you listen to [Trees of Eternity](https://www.youtube.com/watch?v=ADzeM3VsgFg) for a while?
 
 ## Documentation
 
