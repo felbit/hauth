@@ -87,8 +87,8 @@ addAuth auth = do
     return (newUserId, vCode)
 
 -- | Throw the second parameter if the first parameter is Nothing.
-orThrow :: MonadError e m = Maybe a -> e -> m a
-orThrow Nothing e  = throwError e
+orThrow :: MonadError e m => Maybe a -> e -> m a
+orThrow Nothing  e = throwError e
 orThrow (Just a) _ = return a
 
 -- | Looks up an Email in stateUnverifiedEmails via given VerificationCode and
@@ -104,7 +104,7 @@ setEmailAsVerified vCode = do
     state <- lift $ readTVar tvar
 
     let unverifieds = stateUnverifiedEmails state
-        mayEmail  = lookup vCode unverifieds
+        mayEmail    = lookup vCode unverifieds
     email <- mayEmail `orThrow` D.EmailVerificationErrorInvalidCode
 
     let auths     = stateAuths state
@@ -114,10 +114,9 @@ setEmailAsVerified vCode = do
     let verifieds      = stateVerifiedEmails state
         newVerifieds   = insertSet email verifieds
         newUnverifieds = deleteMap vCode unverifieds
-        newState       = state
-          { stateUnverifiedEmails = newUnverifieds
-          , stateVerifiedEmails   = newVerifieds
-          }
+        newState       = state { stateUnverifiedEmails = newUnverifieds
+                               , stateVerifiedEmails   = newVerifieds
+                               }
     lift $ writeTVar tvar newState
     return (uId, email)
 

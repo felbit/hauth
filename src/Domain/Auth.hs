@@ -153,7 +153,9 @@ The very same for `resolveSessionId` and `getUserEmail`. These all are merely
 indirections at the moment.
 -}
 verifyEmail
-    :: AuthRepo m => VerificationCode -> m (Either EmailVerificationError ())
+    :: AuthRepo m
+    => VerificationCode
+    -> m (Either EmailVerificationError (UserId, Email))
 verifyEmail = setEmailAsVerified
 
 -- ** Login
