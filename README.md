@@ -49,6 +49,14 @@ have implemented an `instance Fail.MonadFail App` here, and maybe I will do so l
 _when I did fully understand what I need to do to implement that_ ...); but for now I ran
 with the quick-fix here.
 
+## Logging
+
+State changes are logged through Katip:
+
+- User registration
+- User login
+- Email verification
+
 ## Documentation
 
 Generate [Haddock](https://www.haskell.org/haddock) documentation with `stack haddock`. I will add this in the future as static site to this repository.

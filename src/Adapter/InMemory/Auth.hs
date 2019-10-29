@@ -60,7 +60,9 @@ initialState = State { stateAuths            = []
 -- userId-counter). Adds the email and generated verification token to
 -- stateUnverifiedEmails before returning with the verification code.
 addAuth
-  :: InMemory r m => D.Auth -> m (Either D.RegistrationError D.VerificationCode)
+  :: InMemory r m
+  => D.Auth
+  -> m (Either D.RegistrationError (D.UserId, D.VerificationCode))
 addAuth auth = do
   tvar  <- asks getter
   -- generate the verification code
@@ -82,7 +84,12 @@ addAuth auth = do
                                , stateUnverifiedEmails = newUnverifieds
                                }
     lift $ writeTVar tvar newState
-    return vCode
+    return (newUserId, vCode)
+
+-- | Throw the second parameter if the first parameter is Nothing.
+orThrow :: MonadError e m = Maybe a -> e -> m a
+orThrow Nothing e  = throwError e
+orThrow (Just a) _ = return a
 
 -- | Looks up an Email in stateUnverifiedEmails via given VerificationCode and
 -- moves that into stateVerifiedEmails. If the given VerificationCode does not
@@ -90,23 +97,29 @@ addAuth auth = do
 setEmailAsVerified
   :: InMemory r m
   => D.VerificationCode
-  -> m (Either D.EmailVerificationError ())
+  -> m (Either D.EmailVerificationError (D.UserId, D.Email))
 setEmailAsVerified vCode = do
   tvar <- asks getter
   atomically . runExceptT $ do
     state <- lift $ readTVar tvar
+
     let unverifieds = stateUnverifiedEmails state
-        verifieds   = stateVerifiedEmails state
-        maybeEmail  = lookup vCode unverifieds
-    case maybeEmail of
-      Nothing    -> throwError D.EmailVerificationErrorInvalidCode
-      Just email -> do
-        let newUnverifieds = deleteMap vCode unverifieds
-            newVerifieds   = insertSet email verifieds
-            newState       = state { stateUnverifiedEmails = newUnverifieds
-                                   , stateVerifiedEmails   = newVerifieds
-                                   }
-        lift $ writeTVar tvar newState
+        mayEmail  = lookup vCode unverifieds
+    email <- mayEmail `orThrow` D.EmailVerificationErrorInvalidCode
+
+    let auths     = stateAuths state
+        mayUserId = map fst . find ((email ==) . D.authEmail . snd) $ auths
+    uId <- mayUserId `orThrow` D.EmailVerificationErrorInvalidCode
+
+    let verifieds      = stateVerifiedEmails state
+        newVerifieds   = insertSet email verifieds
+        newUnverifieds = deleteMap vCode unverifieds
+        newState       = state
+          { stateUnverifiedEmails = newUnverifieds
+          , stateVerifiedEmails   = newVerifieds
+          }
+    lift $ writeTVar tvar newState
+    return (uId, email)
 
 -- | Extracts the UserId from the Auth (return Nothing if no UserId is found).
 -- With UserId check for verified Emails and return UserId and the current

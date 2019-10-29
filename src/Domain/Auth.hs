@@ -30,9 +30,10 @@ module Domain.Auth
 where
 
 import           ClassyPrelude
-import           Domain.Validation
-import           Text.Regex.PCRE.Heavy
 import           Control.Monad.Except
+import           Domain.Validation
+import           Katip
+import           Text.Regex.PCRE.Heavy
 
 -- * Types
 
@@ -79,10 +80,11 @@ obviously have side effects.
 -}
 
 class (Monad m) => AuthRepo m where
+    -- addAuth and setEmailAsVerified return 'UserId' for the purpose of logging
     addAuth :: Auth
-            -> m (Either RegistrationError VerificationCode)
+            -> m (Either RegistrationError (UserId, VerificationCode))
     setEmailAsVerified :: VerificationCode
-                       -> m (Either EmailVerificationError ())
+                       -> m (Either EmailVerificationError (UserId, Email))
     findUserByAuth :: Auth -> m (Maybe (UserId, Bool))
     findEmailFromUserId :: UserId -> m (Maybe Email)
 
@@ -126,14 +128,22 @@ ensures that the lines that follow will not be evaluated, if 'addAuth' returns
 a Left value.
 -}
 register
-    :: (AuthRepo m, EmailVerificationNotif m)
+    :: (KatipContext m, AuthRepo m, EmailVerificationNotif m)
     => Auth
     -> m (Either RegistrationError ())
 register auth = runExceptT $ do
-    vCode <- ExceptT $ addAuth auth
+    (uId, vCode) <- ExceptT $ addAuth auth
     let email = authEmail auth
     lift $ notifyEmailVerification email vCode
+    withUserIdContext uId
+        $  $(logTM) InfoS
+        $  ls (rawEmail email)
+        <> " is registered successfully"
 
+
+-- | Adds 'UserId' to the logging context
+withUserIdContext :: (KatipContext m) => UserId -> m a -> m a
+withUserIdContext uId = katipAddContext (sl "userId" uId)
 
 {-| May seem like a useless indirection of `setEmailAsVerified` but keeps things
 consistent and maintainable in the long run. This is also the point to extend
