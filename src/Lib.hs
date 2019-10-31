@@ -52,6 +52,8 @@ action = do
       passw = either undefined id $ mkPassword "SUP3rS3crEtP4ssW0Rd"
       auth  = Auth email passw
   register auth
+  -- The repetetive pattern following is due to GHC-8.6's default MonadFailDesugaring
+  -- TODO: instance of MonadFail for App
   mayVCode <- M.getNotificationsForEmail email
   vCode    <- case mayVCode of
     Nothing     -> error "Verification code not found."

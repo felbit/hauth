@@ -27,7 +27,11 @@ dependencies:
 - pcre-heavy
 - data-has
 - string-random
+# Logging
 - katip
+# PostgreSQL Database
+- resource-pool
+- postgresql-simple
 
 default-extensions:
 - NoImplicitPrelude
