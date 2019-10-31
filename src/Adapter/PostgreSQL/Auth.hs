@@ -1,12 +1,17 @@
 module Adapter.PostgreSQL.Auth where
 
 import           ClassyPrelude
+import           Data.Has
 import           Data.Pool
 import           Data.Time
 import           Database.PostgreSQL.Simple
 import           Database.PostgreSQL.Simple.Migration
+import qualified Domain.Auth                   as D
+import           Text.StringRandom
 
 type State = Pool Connection
+
+type PG r m = (Has State r, MonadReader r m, MonadIO m, MonadThrow m)
 
 data Config = Config { cfgUrl :: ByteString
                      , cfgStripeCount :: Int
@@ -58,3 +63,65 @@ withState :: Config -> (State -> IO a) -> IO a
 withState cfg action = withPool cfg $ \state -> do
   migrate state
   action state
+
+-- | Helper function for PostgreSQL related functions. Gets the connection from
+-- the pool and hands it over to the given action parameter.
+withConn :: PG r m => (Connection -> IO a) -> m a
+withConn action = do
+  pool <- asks getter
+  liftIO . withResource pool (\conn -> action conn)
+
+{- try
+
+"try" is importy by ClassyPrelude. It executes the first argument and catches
+every synchronous exception, if any, with the type of the exception. If an
+exception is thrown then the function will return `Left e`. If no exception
+is thrown, try returns `Right a`.
+
+-}
+
+-- | Generates a new verification code (random 16 character string that has to
+-- be unique systemwide - that's why this is concatenated with the unique
+-- email string) similar to newSession'. Tries to add the auth to the database
+-- and returns UserId and VerificationCode if successful. If an error occures
+-- it tries to interpred the error and give the user a precise hint (e.g.
+-- EmailTaken) or presents the error to the user if no precise reason can be
+-- given.
+addAuth
+  :: PG r m
+  => D.Auth
+  -> m (Either D.RegistrationError (D.UserId, D.VerificationCode))
+addAuth (D.Auth email passw) = do
+  let rawEmail = D.rawEmail email
+      rawPassw = D.rawPassword passw
+  -- generate vCode
+  vCode <- liftIO $ do
+    r <- stringRandomIO "[A-Za-z0-9]{16}"
+    return $ (tshow rawEmail) <> "_" <> r
+  -- issue query
+  result <- withConn $ \conn -> try (query conn qry (rawEmail, rawPassw, vCode))
+  {- interpreting result
+
+  I think I should really alaborate on the following:
+  I am expecting one of these results:
+    - the userId returned as success state
+    - any other Right value means I really messed things up
+    - any Left return coming from "try" is actually an exception caught by "try"
+      so I will dig into that:
+      - if the exception is about email_key it means that the user tried an
+        email that is already taken. That might happen on a very regular basis.
+      - any other exception has to be given to the user for further handling
+
+  -}
+  case result of
+    Right [Only uId] -> return (Right (uId, vCode))
+    Right _          -> throwString "Should not happen: PG doesn't return uId!"
+    Left err@SqlError { sqlState = state, sqlErrorMsg = msg } ->
+      if state == "23505" && "auths_email_key" `isInfixOf` msg
+        then return $ Left D.RegistrationErrorEmailTaken
+        else throwString ("Unhandled PG exception: " <> show err)
+ where
+  qry
+    = "insert into auths \
+        \(email, passwd, email_verification_code, is_email_verified) \
+        \values (?, crypt(?, gen_salt('bf')), ?, 'f') returning id"
