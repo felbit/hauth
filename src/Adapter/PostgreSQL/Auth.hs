@@ -132,16 +132,45 @@ setEmailAsVerified
 setEmailAsVerified vCode = do
   result <- withConn $ \conn -> query conn qry (Only vCode)
   case result of
-    [(uId, mail)] -> case D.mkEmail mail of
-      Right email -> return (Right (uId, email))
-      _ ->
-        throwString
-          $  "Should not happen: email in DB is not valid: "
-          <> unpack email
+    [(uId, email)] -> case D.mkEmail email of
+      Right email' -> return (Right (uId, email'))
+      _ -> throwString $ "Should not happen: email in DB is not valid:
+           " <> unpack email
     _ -> reutnr (Left D.EmailVerificationErrorInvalidCode)
  where
   qry
     = "update auths \
-        \set is_email_verified = 't' \
-        \where email_verification_code = ? \
-        \returning id, cast (email as text)"
+      \set is_email_verified = 't' \
+      \where email_verification_code = ? \
+      \returning id, cast (email as text)"
+      -- the strange placement of '=' is done by brittany
+
+-- | Get's the user by email and password and returns the user id (if any) with
+-- the verficiation state
+findUserByAuth :: PG r m => D.Auth -> m (Maybe (D.UserId, Bool))
+findUserByAuth (D.Auth email password) = do
+  let rawEmail    = D.rawEmail email
+      rawPassword = D.rawPassword password
+  result <- withConn (\conn -> query conn qry (rawEmail, rawPassword))
+  return $ case result of
+    [(uId, isVerified)] -> Just (uId, isVerified)
+    _                   -> Nothing
+ where
+  qry = "select id, is_email_verified from auths \
+        \where email = ? and pass = crypt(?, pass)"
+
+
+-- | Gets an email address from the auths table by user id; returns Nothing if
+-- id not found.
+findEmailFromUserId :: PG r m => D.UserId -> m (Maybe D.Email)
+findEmailFromUserId uId = do
+  result <- withConn (\conn -> query conn qry (Only uId))
+  case result of
+    [Only email] -> case D.mkEmail email of
+      Right email' -> return (Just email')
+      _ -> throwString $ "Should not happen: email in DB is invalid:
+      " <> unpack email
+    _ -> return Nothing
+ where
+  qry = "select cast(email as text) from auths \
+        \where id = ?"
