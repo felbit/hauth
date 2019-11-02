@@ -10,14 +10,19 @@ Currently the domain code is finished. That is `Domain.Validation` for validatio
 functionality for passwords and email addresses and `Domain.Auth` as main
 authentication module.
 
-Additionally there is a basic in-memory _"database"_ that holds authentication and session
-information.
+I started adding adapters by implementing a basic in-memory _"database"_ that holds
+authentication and session information.
 
-Next I will add a frontend to make using that stuff easier.
+I am currently working on a PostgreSQL adapter to give the storing of data some sense.
+
+Also there's a basic logging in place, useing [Katip](https://github.com/Soostone/katip).
 
 ## Implementation
 
-How to use the authentication module with in-memory database is demonstrated in `src/Lib.hs`. The `action` function demonstrates application (prints a tupel of `(SessionId, UserId, Email)`, e.g. `("1XSq9I1V7RUvO6zFr",1,Email {emailRaw = "felbit@example.com"})`):
+How to use the authentication module with in-memory database is demonstrated in
+`src/Lib.hs`. The `action` function demonstrates application (prints a tupel of
+`(SessionId, UserId, Email)`, e.g. `("1XSq9I1V7RUvO6zFr",1,Email {emailRaw =
+"felbit@example.com"})`):
 
 ```
 action = do
@@ -51,7 +56,7 @@ with the quick-fix here.
 
 ## Logging
 
-State changes are logged through Katip:
+State changes are logged:
 
 - User registration
 - User login
