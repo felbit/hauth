@@ -101,8 +101,6 @@ addAuth (D.Auth email passw) = do
   -- issue query
   result <- withConn $ \conn -> try (query conn qry (rawEmail, rawPassw, vCode))
   {- interpreting result
-
-  I think I should really alaborate on the following:
   I am expecting one of these results:
     - the userId returned as success state
     - any other Right value means I really messed things up
@@ -111,7 +109,6 @@ addAuth (D.Auth email passw) = do
       - if the exception is about email_key it means that the user tried an
         email that is already taken. That might happen on a very regular basis.
       - any other exception has to be given to the user for further handling
-
   -}
   case result of
     Right [Only uId] -> return (Right (uId, vCode))
@@ -125,3 +122,26 @@ addAuth (D.Auth email passw) = do
     = "insert into auths \
         \(email, passwd, email_verification_code, is_email_verified) \
         \values (?, crypt(?, gen_salt('bf')), ?, 'f') returning id"
+
+-- | Sets the email address to a verified state if the verification code
+-- matches.
+setEmailAsVerified
+  :: PG r m
+  => D.VerificationCode
+  -> m (Either D.EmailVerificationError (D.UserId, D.Email))
+setEmailAsVerified vCode = do
+  result <- withConn $ \conn -> query conn qry (Only vCode)
+  case result of
+    [(uId, mail)] -> case D.mkEmail mail of
+      Right email -> return (Right (uId, email))
+      _ ->
+        throwString
+          $  "Should not happen: email in DB is not valid: "
+          <> unpack email
+    _ -> reutnr (Left D.EmailVerificationErrorInvalidCode)
+ where
+  qry
+    = "update auths \
+        \set is_email_verified = 't' \
+        \where email_verification_code = ? \
+        \returning id, cast (email as text)"
