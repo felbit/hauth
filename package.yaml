@@ -32,6 +32,8 @@ dependencies:
 # PostgreSQL Database
 - resource-pool
 - postgresql-simple
+- postgresql-simple-migration
+- exceptions
 
 default-extensions:
 - NoImplicitPrelude

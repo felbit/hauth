@@ -1,6 +1,7 @@
 module Adapter.PostgreSQL.Auth where
 
 import           ClassyPrelude
+import qualified Control.Monad.Catch           as Catch
 import           Data.Has
 import           Data.Pool
 import           Data.Time
@@ -11,7 +12,7 @@ import           Text.StringRandom
 
 type State = Pool Connection
 
-type PG r m = (Has State r, MonadReader r m, MonadIO m, MonadThrow m)
+type PG r m = (Has State r, MonadReader r m, MonadIO m, Catch.MonadThrow m)
 
 data Config = Config { cfgUrl :: ByteString
                      , cfgStripeCount :: Int
@@ -38,7 +39,7 @@ withPool cfg action = bracket initPool cleanPool action
                         (cfgStripeCount cfg)
                         (cfgIdleConnTimeout cfg)
                         (cfgMaxOpenConnPerStripe cfg)
-  cleanConn = destroyAllResources
+  cleanPool = destroyAllResources
   openConn  = connectPostgreSQL (cfgUrl cfg)
   closeConn = close
 
@@ -69,7 +70,7 @@ withState cfg action = withPool cfg $ \state -> do
 withConn :: PG r m => (Connection -> IO a) -> m a
 withConn action = do
   pool <- asks getter
-  liftIO . withResource pool (\conn -> action conn)
+  liftIO . withResource pool $ \conn -> action conn
 
 {- try
 
@@ -134,9 +135,11 @@ setEmailAsVerified vCode = do
   case result of
     [(uId, email)] -> case D.mkEmail email of
       Right email' -> return (Right (uId, email'))
-      _ -> throwString $ "Should not happen: email in DB is not valid:
-           " <> unpack email
-    _ -> reutnr (Left D.EmailVerificationErrorInvalidCode)
+      _ ->
+        throwString
+          $  "Should not happen: email in DB is invalid: "
+          <> unpack email
+    _ -> return (Left D.EmailVerificationErrorInvalidCode)
  where
   qry
     = "update auths \
@@ -156,7 +159,8 @@ findUserByAuth (D.Auth email password) = do
     [(uId, isVerified)] -> Just (uId, isVerified)
     _                   -> Nothing
  where
-  qry = "select id, is_email_verified from auths \
+  qry
+    = "select id, is_email_verified from auths \
         \where email = ? and pass = crypt(?, pass)"
 
 
@@ -168,9 +172,10 @@ findEmailFromUserId uId = do
   case result of
     [Only email] -> case D.mkEmail email of
       Right email' -> return (Just email')
-      _ -> throwString $ "Should not happen: email in DB is invalid:
-      " <> unpack email
+      _ ->
+        throwString
+          $  "Should not happen: email in DB is invalid: "
+          <> unpack email
     _ -> return Nothing
- where
-  qry = "select cast(email as text) from auths \
+  where qry = "select cast(email as text) from auths \
         \where id = ?"

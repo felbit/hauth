@@ -1,28 +1,30 @@
 module Lib where
 
 import qualified Adapter.InMemory.Auth         as M
+import qualified Adapter.PostgreSQL.Auth       as PG
 import           ClassyPrelude
+import qualified Control.Monad.Catch           as Catch
 import           Domain.Auth
 import           Katip
 
-type State = TVar M.State
+type State = (PG.State, TVar M.State)
 
 newtype App a = App
   { unApp :: ReaderT State (KatipContextT IO) a
   } deriving (Applicative, Functor, Monad, MonadReader State, MonadIO
-             , KatipContext, Katip)
+             , KatipContext, Katip, Catch.MonadThrow)
 
 run :: LogEnv -> State -> App a -> IO a
 run le state = runKatipContextT le () mempty . flip runReaderT state . unApp
 
--- Glueing together the in memory and the domain logic with instances of
+-- Glueing together the database and domain logic with instances of
 -- AuthRepo, EmailVerificationNotif and SessionRepo for the App
 
 instance AuthRepo App where
-  addAuth             = M.addAuth
-  setEmailAsVerified  = M.setEmailAsVerified
-  findUserByAuth      = M.findUserByAuth
-  findEmailFromUserId = M.findEmailFromUserId
+  addAuth             = PG.addAuth
+  setEmailAsVerified  = PG.setEmailAsVerified
+  findUserByAuth      = PG.findUserByAuth
+  findEmailFromUserId = PG.findEmailFromUserId
 
 instance EmailVerificationNotif App where
   notifyEmailVerification = M.notifyEmailVerification
@@ -43,8 +45,15 @@ withKatip app = bracket createLogEnv closeScribes app
 
 runExample :: IO ()
 runExample = withKatip $ \le -> do
-  state <- newTVarIO M.initialState
-  run le state action
+  mState <- newTVarIO M.initialState
+  PG.withState pgcfg (\pgState -> run le (pgState, mState) action)
+ where
+  pgcfg = PG.Config { PG.cfgUrl = "postgresql://localhost/hauth"
+                    , PG.cfgStripeCount          = 2
+                    , PG.cfgMaxOpenConnPerStripe = 5
+                    , PG.cfgIdleConnTimeout      = 10
+                    }
+
 
 action :: App ()
 action = do
