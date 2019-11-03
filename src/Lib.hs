@@ -36,7 +36,7 @@ instance SessionRepo App where
 -- Let's have an example
 
 withKatip :: (LogEnv -> IO a) -> IO a
-withKatip app = bracket createLogEnv closeScribes app
+withKatip = bracket createLogEnv closeScribes
  where
   createLogEnv = do
     logEnv       <- initLogEnv "HAuth" "prod"

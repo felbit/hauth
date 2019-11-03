@@ -32,7 +32,7 @@ Here we setup the connection pool for action and destruct the pool afterwards.
 
 -- | Sets up a data connection pool with user configuration
 withPool :: Config -> (State -> IO a) -> IO a
-withPool cfg action = bracket initPool cleanPool action
+withPool cfg = bracket initPool cleanPool
  where
   initPool = createPool openConn
                         closeConn
