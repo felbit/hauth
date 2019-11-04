@@ -34,6 +34,8 @@ dependencies:
 - postgresql-simple
 - postgresql-simple-migration
 - exceptions
+# Redis
+- hedis
 
 default-extensions:
 - NoImplicitPrelude

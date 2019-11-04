@@ -39,6 +39,7 @@ extra-deps:
 - containers-0.5.11.0
 - binary-0.8.7.0
 - text-1.2.4.0
+- hedis-0.11.0
 
 # - acme-missiles-0.3
 # - git: https://github.com/commercialhaskell/stack.git

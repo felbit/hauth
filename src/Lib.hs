@@ -2,12 +2,13 @@ module Lib where
 
 import qualified Adapter.InMemory.Auth         as M
 import qualified Adapter.PostgreSQL.Auth       as PG
+import qualified Adapter.Redis.Auth            as R
 import           ClassyPrelude
 import qualified Control.Monad.Catch           as Catch
 import           Domain.Auth
 import           Katip
 
-type State = (PG.State, TVar M.State)
+type State = (PG.State, R.State, TVar M.State)
 
 newtype App a = App
   { unApp :: ReaderT State (KatipContextT IO) a
@@ -30,8 +31,8 @@ instance EmailVerificationNotif App where
   notifyEmailVerification = M.notifyEmailVerification
 
 instance SessionRepo App where
-  newSession            = M.newSession
-  findUserIdBySessionId = M.findUserIdBySessionId
+  newSession            = R.newSession
+  findUserIdBySessionId = R.findUserIdBySessionId
 
 -- Let's have an example
 
@@ -46,13 +47,15 @@ withKatip = bracket createLogEnv closeScribes
 runExample :: IO ()
 runExample = withKatip $ \le -> do
   mState <- newTVarIO M.initialState
-  PG.withState pgcfg (\pgState -> run le (pgState, mState) action)
+  PG.withState pgcfg $ \pgState -> R.withState redisCfg
+    $ \redisState -> run le (pgState, redisState, mState) action
  where
-  pgcfg = PG.Config { PG.cfgUrl = "postgresql://localhost/hauth"
-                    , PG.cfgStripeCount          = 2
-                    , PG.cfgMaxOpenConnPerStripe = 5
-                    , PG.cfgIdleConnTimeout      = 10
-                    }
+  rediscfg = "redis://localhost:6379/0"
+  pgcfg    = PG.Config { PG.cfgUrl = "postgresql://localhost/hauth"
+                       , PG.cfgStripeCount          = 2
+                       , PG.cfgMaxOpenConnPerStripe = 5
+                       , PG.cfgIdleConnTimeout      = 10
+                       }
 
 
 action :: App ()

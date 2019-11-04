@@ -32,6 +32,13 @@ packages:
       sha256: 3437b0a73ce2ae1a81aa8b3438d41a85981c00894cdbee0d6d6d6873046a5d5d
   original:
     hackage: text-1.2.4.0
+- completed:
+    hackage: hedis-0.11.0@sha256:273e696387083406c89828094acb630fce549bd4d325c03101d8aa411568327f,4988
+    pantry-tree:
+      size: 1134
+      sha256: 0944e06604ee77460a9632699f493b57d3f42faaa282a0dbeec951dcabc08b15
+  original:
+    hackage: hedis-0.11.0
 snapshots:
 - completed:
     size: 524786
